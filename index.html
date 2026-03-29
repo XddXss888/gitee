@@ -8,14 +8,61 @@
 </head>
 <body>
   <header class="topbar">
-    <div class="title">
-      <div class="h1">Moark 多模型工具（Web）</div>
-      <div class="sub">API 注册地址: <span class="mono">https://ai.gitee.com/serverless-api</span></div>
+    <div class="topbar-left">
+      <div class="brand-mark">M</div>
+      <div class="title">
+        <div class="h1">Moark 多模型工具（Web）</div>
+        <div class="sub">API 注册地址: <span class="mono">https://ai.gitee.com/serverless-api</span></div>
+      </div>
     </div>
-    <div class="status">
-      <span class="badge" id="statusBadge">准备就绪 / Ready</span>
+
+    <div class="topbar-right">
+      <a
+        class="top-icon-btn"
+        id="githubLink"
+        href="https://github.com/YOUR_NAME/YOUR_REPO"
+        target="_blank"
+        rel="noopener"
+        aria-label="GitHub 仓库"
+        title="GitHub 仓库"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path fill="currentColor" d="M12 .5C5.65.5.5 5.65.5 12a11.5 11.5 0 0 0 7.86 10.92c.58.11.79-.25.79-.56v-2.16c-3.2.7-3.88-1.36-3.88-1.36-.52-1.33-1.27-1.68-1.27-1.68-1.04-.72.08-.71.08-.71 1.15.08 1.75 1.18 1.75 1.18 1.02 1.75 2.67 1.25 3.32.96.1-.74.4-1.25.72-1.54-2.56-.29-5.25-1.28-5.25-5.72 0-1.27.46-2.3 1.19-3.12-.12-.29-.52-1.46.11-3.04 0 0 .97-.31 3.19 1.19a11.1 11.1 0 0 1 5.8 0c2.22-1.5 3.19-1.19 3.19-1.19.63 1.58.23 2.75.11 3.04.74.82 1.19 1.85 1.19 3.12 0 4.45-2.7 5.43-5.28 5.72.41.35.78 1.05.78 2.11v3.12c0 .31.21.68.8.56A11.5 11.5 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5Z"/>
+        </svg>
+        <span>GitHub</span>
+      </a>
+
+      <button
+        class="top-icon-btn coffee-btn"
+        id="donateBtn"
+        type="button"
+        aria-label="赞助项目"
+        title="赞助项目"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path fill="currentColor" d="M3 6.5A2.5 2.5 0 0 1 5.5 4h9A2.5 2.5 0 0 1 17 6.5V7h1.75A3.25 3.25 0 0 1 22 10.25c0 1.64-1.23 3.02-2.86 3.21A5.5 5.5 0 0 1 13.75 18h-6.5A5.25 5.25 0 0 1 2 12.75V6.5Zm14 2V11a1.75 1.75 0 0 0 0-3.5H17Z"/>
+          <path fill="currentColor" d="M6 20a1 1 0 0 1 1-1h9a1 1 0 1 1 0 2H7a1 1 0 0 1-1-1Z"/>
+        </svg>
+        <span>赞助</span>
+      </button>
+
+      <div class="status">
+        <span class="badge" id="statusBadge">准备就绪 / Ready</span>
+      </div>
     </div>
   </header>
+
+  <div class="donate-modal" id="donateModal" aria-hidden="true">
+    <div class="donate-mask" id="donateMask"></div>
+    <div class="donate-panel" role="dialog" aria-modal="true" aria-labelledby="donateTitle">
+      <button class="donate-close" id="donateClose" type="button" aria-label="关闭">×</button>
+      <div class="donate-eyebrow">Support this project</div>
+      <h3 id="donateTitle">请我喝杯咖啡</h3>
+      <p class="donate-text">把你的收款码图片放到项目根目录，文件名固定为 <span class="mono">image.png</span>。</p>
+      <img class="donate-image" src="./image.png" alt="项目赞助收款码" />
+      <a class="btn primary donate-download" href="./image.png" target="_blank" rel="noopener">打开收款码</a>
+    </div>
+  </div>
 
   <main class="container">
     <section class="card">
@@ -290,5 +337,37 @@
   </footer>
 
   <script src="./app.js"></script>
+  <script>
+    (function () {
+      const donateBtn = document.getElementById("donateBtn");
+      const donateModal = document.getElementById("donateModal");
+      const donateMask = document.getElementById("donateMask");
+      const donateClose = document.getElementById("donateClose");
+
+      if (!donateBtn || !donateModal || !donateMask || !donateClose) return;
+
+      const openDonate = () => {
+        donateModal.classList.add("show");
+        donateModal.setAttribute("aria-hidden", "false");
+        document.body.classList.add("modal-open");
+      };
+
+      const closeDonate = () => {
+        donateModal.classList.remove("show");
+        donateModal.setAttribute("aria-hidden", "true");
+        document.body.classList.remove("modal-open");
+      };
+
+      donateBtn.addEventListener("click", openDonate);
+      donateMask.addEventListener("click", closeDonate);
+      donateClose.addEventListener("click", closeDonate);
+
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && donateModal.classList.contains("show")) {
+          closeDonate();
+        }
+      });
+    })();
+  </script>
 </body>
 </html>
