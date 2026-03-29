@@ -33,12 +33,24 @@ function nowTs() {
 
 function setStatus(text, kind="info") {
   const badge = $("statusBadge");
+  if (!badge) return;
+
   badge.textContent = text;
-  // tiny visual cue
   badge.style.borderColor =
     kind === "ok" ? "rgba(37,194,160,.7)" :
     kind === "err" ? "rgba(255,84,112,.75)" :
     "rgba(255,255,255,.10)";
+
+  badge.style.background =
+    kind === "ok" ? "rgba(37,194,160,.10)" :
+    kind === "err" ? "rgba(255,84,112,.10)" :
+    "rgba(255,255,255,.06)";
+}
+
+function waitingStatusText(label, tick, elapsedMs, extra="") {
+  const sec = Math.floor(elapsedMs / 1000);
+  const extraText = extra ? ` • ${extra}` : "";
+  return `${label} 轮询中... 已等待 ${sec}s • 第 ${tick} 次检查${extraText} • 正常等待，并非卡死`;
 }
 
 function getApiKey() {
@@ -215,8 +227,19 @@ async function fetchAsBlob(url, kindHint="file") {
 // Poll task status
 async function pollTask(taskId, apiKey, {timeoutMs=30*60*1000, intervalMs=6000, onTick=null}={}) {
   const start = Date.now();
+  let tick = 0;
+
   while (Date.now() - start < timeoutMs) {
-    if (onTick) onTick();
+    tick++;
+    const elapsedMs = Date.now() - start;
+
+    if (onTick) {
+      onTick({
+        tick,
+        elapsedMs,
+      });
+    }
+
     const res = await apiFetch(`task/${encodeURIComponent(taskId)}`, {
       method: "GET",
       headers: { "Authorization": `Bearer ${apiKey}` },
@@ -228,6 +251,7 @@ async function pollTask(taskId, apiKey, {timeoutMs=30*60*1000, intervalMs=6000, 
     }
     await new Promise(r => setTimeout(r, intervalMs));
   }
+
   return { status: "timeout", raw: { status:"timeout", message:"maximum wait time exceeded" } };
 }
 
@@ -306,14 +330,12 @@ async function runHunyuanVideo() {
     openUrl: openAfter ? `https://ai.gitee.com/v1/task/${encodeURIComponent(taskId)}` : null,
   });
 
-  setStatus("HunyuanVideo 轮询中... / Polling...");
-  let tick = 0;
+  setStatus("HunyuanVideo 任务已创建，开始轮询...");
   const result = await pollTask(taskId, apiKey, {
     intervalMs: 10 * 1000,
     timeoutMs: 30 * 60 * 1000,
-    onTick: () => {
-      tick++;
-      if (tick % 2 === 0) setStatus(`HunyuanVideo 轮询中... (${tick}) / Polling... (${tick})`);
+    onTick: (info) => {
+      setStatus(waitingStatusText("HunyuanVideo", info.tick, info.elapsedMs));
     },
   });
 
@@ -483,11 +505,20 @@ async function runEdit() {
   }
 
   const taskId = j.task_id;
-  setStatus(`Edit-2511 轮询中... / Polling... (${taskId.slice(0,8)})`);
+  setStatus(`Edit-2511 任务已创建，开始轮询... (${taskId.slice(0,8)})`);
 
   const result = await pollTask(taskId, apiKey, {
     intervalMs: 6000,
-    onTick: () => setStatus(`Edit-2511 轮询中... / Polling... (${taskId.slice(0,8)})`),
+    onTick: (info) => {
+      setStatus(
+        waitingStatusText(
+          "Edit-2511",
+          info.tick,
+          info.elapsedMs,
+          `task=${taskId.slice(0,8)}`
+        )
+      );
+    },
   });
 
   addOutputItem({ title: `Edit-2511 任务结果 task=${taskId.slice(0,8)}`, rawJson: result.raw });
@@ -681,12 +712,21 @@ async function runWan() {
     }
 
     const taskId = create.json.task_id;
-    setStatus(`Wan2.2 分段 ${i+1}/${segCount} 轮询中... / Polling... (${taskId.slice(0,8)})`);
+    setStatus(`Wan2.2 分段 ${i+1}/${segCount} 任务已创建，开始轮询... (${taskId.slice(0,8)})`);
 
     const result = await pollTask(taskId, apiKey, {
       timeoutMs: 60*60*1000,
       intervalMs: 8000,
-      onTick: () => setStatus(`Wan2.2 分段 ${i+1}/${segCount} 轮询中... / Polling... (${taskId.slice(0,8)})`),
+      onTick: (info) => {
+        setStatus(
+          waitingStatusText(
+            `Wan2.2 分段 ${i+1}/${segCount}`,
+            info.tick,
+            info.elapsedMs,
+            `task=${taskId.slice(0,8)}`
+          )
+        );
+      },
     });
 
     addOutputItem({ title: `Wan2.2 分段 ${i+1} 任务结果`, rawJson: result.raw, meta: `task_id=${taskId}` });
@@ -791,7 +831,6 @@ function initUi() {
     try { await runHunyuanVideo(); }
     catch (e) { addOutputItem({ title:"HunyuanVideo 错误 / Error", meta:String(e) }); }
   };
-
 
   $("btnClearOutput").onclick = clearOutput;
 
