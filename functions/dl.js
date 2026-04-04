@@ -20,13 +20,22 @@ export async function onRequest(context) {
   const range = request.headers.get("Range");
   if (range) h.set("Range", range);
 
-  const upstream = await fetch(target, { method: "GET", headers: h, redirect: "follow" });
+  const upstream = await fetch(target, { method: "GET", headers: h, redirect: "follow", cache: "no-store" });
 
+  // Strip upstream cache headers, prevent edge caching
   const respHeaders = new Headers(upstream.headers);
-  for (const [k, v] of Object.entries(corsHeaders())) respHeaders.set(k, v);
+  respHeaders.delete("Cache-Control");
+  respHeaders.delete("ETag");
+  respHeaders.delete("Last-Modified");
+  respHeaders.delete("Expires");
+  respHeaders.delete("Age");
+  respHeaders.delete("Vary");
+  respHeaders.set("Cache-Control", "no-store, no-cache, must-revalidate");
+  respHeaders.set("Pragma", "no-cache");
   // Some hosts send restrictive headers; loosen for download/view
   respHeaders.delete("Content-Security-Policy");
   respHeaders.delete("X-Frame-Options");
+  for (const [k, v] of Object.entries(corsHeaders())) respHeaders.set(k, v);
 
   return new Response(upstream.body, {
     status: upstream.status,
